@@ -1,7 +1,8 @@
 const API_BASE = "https://eva-player.onrender.com";
 const USER_ID_KEY = "eva_music_user_id";
 
-const telegram = window.Telegram?.WebApp;
+const telegram = window.Telegram?.WebApp ?? null;
+const telegramUserId = telegram?.initDataUnsafe?.user?.id?.toString() ?? "";
 
 const state = {
   tracks: [],
@@ -10,10 +11,7 @@ const state = {
   repeat: false,
   savedTracks: [],
   playing: false,
-  userId:
-    telegram?.initDataUnsafe?.user?.id?.toString() ||
-    localStorage.getItem(USER_ID_KEY) ||
-    "",
+  userId: telegramUserId || localStorage.getItem(USER_ID_KEY) || "",
 };
 
 const audio = new Audio();
@@ -42,6 +40,10 @@ const dom = {
   saveUserIdBtn: document.getElementById("saveUserIdBtn"),
 };
 
+function hasRealTelegramUser() {
+  return Boolean(telegram?.initDataUnsafe?.user?.id);
+}
+
 function formatTime(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
   const whole = Math.floor(seconds);
@@ -69,7 +71,7 @@ function syncPlayingState() {
   document.body.classList.toggle("is-playing", state.playing);
   dom.playBtn.classList.toggle("is-playing", state.playing);
   dom.playBtn.setAttribute("aria-label", state.playing ? "Пауза" : "Воспроизвести");
-  dom.playBtn.querySelector("span").textContent = state.playing ? "❚❚" : "▶";
+  dom.playBtn.querySelector("span").textContent = state.playing ? "||" : ">");
 }
 
 function syncButtons() {
@@ -96,17 +98,24 @@ function renderTrackList() {
 function renderUserId() {
   if (dom.userIdInput) {
     dom.userIdInput.value = state.userId;
-    dom.userIdInput.disabled = Boolean(telegram);
+    dom.userIdInput.disabled = hasRealTelegramUser();
   }
   if (dom.saveUserIdBtn) {
-    dom.saveUserIdBtn.disabled = Boolean(telegram);
+    dom.saveUserIdBtn.disabled = hasRealTelegramUser();
   }
 }
 
 function renderDebug() {
   if (!dom.telegramDebug) return;
   dom.telegramDebug.textContent = JSON.stringify(
-    telegram?.initDataUnsafe || null,
+    {
+      telegramPresent: Boolean(telegram),
+      initData: telegram?.initData ?? null,
+      initDataUnsafe: telegram?.initDataUnsafe ?? null,
+      telegramUserId,
+      effectiveUserId: state.userId,
+      hasRealTelegramUser: hasRealTelegramUser(),
+    },
     null,
     2
   );
@@ -158,9 +167,11 @@ function render() {
 
 async function resolveTrackUrl(trackId) {
   const params = new URLSearchParams({ track_id: trackId });
-  if (!telegram && state.userId) {
+
+  if (state.userId) {
     params.set("user_id", state.userId);
   }
+
   const response = await fetch(`${API_BASE}/tracks/audio?${params.toString()}`);
   if (!response.ok) {
     throw new Error("Не удалось получить ссылку на трек");
@@ -248,8 +259,11 @@ function toggleSave() {
 }
 
 function saveUserId() {
-  const value = dom.userIdInput.value.trim();
+  if (hasRealTelegramUser()) return;
+
+  const value = (dom.userIdInput?.value || "").trim();
   if (!value) return;
+
   state.userId = value;
   localStorage.setItem(USER_ID_KEY, value);
   loadTracks().catch((error) => {
