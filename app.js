@@ -37,6 +37,7 @@ const dom = {
   secondaryAction: document.getElementById("secondaryAction"),
   saveBtn: document.getElementById("saveBtn"),
   trackList: document.getElementById("trackList"),
+  telegramDebug: document.getElementById("telegramDebug"),
   userIdInput: document.getElementById("userIdInput"),
   saveUserIdBtn: document.getElementById("saveUserIdBtn"),
 };
@@ -102,6 +103,15 @@ function renderUserId() {
   }
 }
 
+function renderDebug() {
+  if (!dom.telegramDebug) return;
+  dom.telegramDebug.textContent = JSON.stringify(
+    telegram?.initDataUnsafe || null,
+    null,
+    2
+  );
+}
+
 function render() {
   const track = currentTrack();
   if (!track) {
@@ -117,6 +127,7 @@ function render() {
     syncButtons();
     syncPlayingState();
     renderUserId();
+    renderDebug();
     return;
   }
 
@@ -138,6 +149,7 @@ function render() {
   renderTrackList();
   syncPlayingState();
   renderUserId();
+  renderDebug();
 
   dom.line1.onclick = () => loadTrack(firstIndex, true);
   dom.line2.onclick = () => loadTrack(secondIndex, true);
@@ -312,6 +324,7 @@ if (telegram) {
 }
 
 render();
+renderDebug();
 loadTracks().catch((error) => {
   console.error(error);
   dom.trackTitle.textContent = "Ошибка загрузки";
