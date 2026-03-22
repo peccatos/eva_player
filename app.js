@@ -71,7 +71,7 @@ function syncPlayingState() {
   document.body.classList.toggle("is-playing", state.playing);
   dom.playBtn.classList.toggle("is-playing", state.playing);
   dom.playBtn.setAttribute("aria-label", state.playing ? "Пауза" : "Воспроизвести");
-  dom.playBtn.querySelector("span").textContent = state.playing ? "||" : ">");
+  dom.playBtn.querySelector("span").textContent = state.playing ? "||" : ">";
 }
 
 function syncButtons() {
