@@ -1,5 +1,7 @@
-const API_BASE = "http://127.0.0.1:3001";
+const API_BASE = "https://eva-player.onrender.com";
 const USER_ID_KEY = "eva_music_user_id";
+
+const telegram = window.Telegram?.WebApp;
 
 const state = {
   tracks: [],
@@ -8,7 +10,10 @@ const state = {
   repeat: false,
   savedTracks: [],
   playing: false,
-  userId: localStorage.getItem(USER_ID_KEY) || "",
+  userId:
+    telegram?.initDataUnsafe?.user?.id?.toString() ||
+    localStorage.getItem(USER_ID_KEY) ||
+    "",
 };
 
 const audio = new Audio();
@@ -88,16 +93,22 @@ function renderTrackList() {
 }
 
 function renderUserId() {
-  dom.userIdInput.value = state.userId;
+  if (dom.userIdInput) {
+    dom.userIdInput.value = state.userId;
+    dom.userIdInput.disabled = Boolean(telegram);
+  }
+  if (dom.saveUserIdBtn) {
+    dom.saveUserIdBtn.disabled = Boolean(telegram);
+  }
 }
 
 function render() {
   const track = currentTrack();
   if (!track) {
-    dom.trackTitle.textContent = state.userId ? "Треков нет" : "Укажи Telegram ID";
+    dom.trackTitle.textContent = state.userId ? "Треков нет" : "Открой в Telegram";
     dom.trackArtist.textContent = state.userId
       ? "Отправь аудио боту, чтобы оно появилось здесь"
-      : "Сначала сохрани свой Telegram user id";
+      : "В Telegram Web App пользователь определяется автоматически";
     dom.line1.textContent = "";
     dom.line2Part1.textContent = "";
     dom.line2Part2.textContent = "";
@@ -134,7 +145,11 @@ function render() {
 }
 
 async function resolveTrackUrl(trackId) {
-  const response = await fetch(`${API_BASE}/tracks/audio?track_id=${encodeURIComponent(trackId)}`);
+  const params = new URLSearchParams({ track_id: trackId });
+  if (!telegram && state.userId) {
+    params.set("user_id", state.userId);
+  }
+  const response = await fetch(`${API_BASE}/tracks/audio?${params.toString()}`);
   if (!response.ok) {
     throw new Error("Не удалось получить ссылку на трек");
   }
@@ -262,10 +277,12 @@ dom.nextBtn.addEventListener("click", playNextTrack);
 dom.primaryAction.addEventListener("click", toggleShuffle);
 dom.secondaryAction.addEventListener("click", toggleRepeat);
 dom.saveBtn.addEventListener("click", toggleSave);
-dom.saveUserIdBtn.addEventListener("click", saveUserId);
-dom.userIdInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") saveUserId();
-});
+if (dom.saveUserIdBtn) dom.saveUserIdBtn.addEventListener("click", saveUserId);
+if (dom.userIdInput) {
+  dom.userIdInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") saveUserId();
+  });
+}
 
 audio.addEventListener("loadedmetadata", () => {
   dom.duration.textContent = formatTime(audio.duration);
@@ -288,6 +305,11 @@ audio.addEventListener("ended", () => {
     playNextTrack();
   }
 });
+
+if (telegram) {
+  telegram.ready();
+  telegram.expand();
+}
 
 render();
 loadTracks().catch((error) => {
