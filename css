@@ -237,6 +237,52 @@ body.is-playing .hero__art {
   accent-color: #a28f7a;
 }
 
+.userbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.userbar input,
+.userbar button,
+.debug {
+  border: 1px solid var(--sheet-line);
+  border-radius: 18px;
+  background: rgba(250, 248, 243, 0.98);
+  box-shadow: 0 16px 40px rgba(55, 39, 20, 0.08);
+}
+
+.userbar input,
+.userbar button {
+  min-height: 52px;
+  padding: 0 16px;
+  font: inherit;
+  color: var(--text);
+}
+
+.userbar input:disabled,
+.userbar button:disabled {
+  opacity: 0.6;
+}
+
+.userbar button {
+  cursor: pointer;
+}
+
+.debug {
+  padding: 12px 14px;
+  color: var(--muted);
+  overflow: auto;
+}
+
+.debug pre {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .sheet__group {
   display: grid;
   gap: 10px;
